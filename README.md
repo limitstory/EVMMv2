@@ -29,16 +29,6 @@ The implementation has been evaluated under the following environment:
 
 ---
 
-## Reproducibility
-
-This repository includes the source code corresponding to the experimental evaluation described in a **submitted manuscript currently under review**. 
-The implementation is provided to support **research reproducibility and further investigation**.
-
-The experimental setup follows the system configuration described in the submitted manuscript. 
-The contents of this repository may be updated following the completion of the review process.
-
----
-
 ## Patent Notice
 
 The underlying techniques of EVMMv2 are subject to a **pending patent application**. 
