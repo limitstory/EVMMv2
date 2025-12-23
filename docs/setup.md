@@ -16,6 +16,17 @@ The setup targets Kubernetes + CRI-O on Debian/Ubuntu-based systems.
 - Root or sudo privileges
 - cgroup v2 enabled
 
+  ## Privilege Assumptions
+
+EVMMv2 performs runtime control operations that require elevated privileges
+(e.g., interactions with CRI-O, kubelet, and checkpoint/restore mechanisms).
+
+For experimental simplicity and deterministic behavior, the implementation
+**assumes passwordless (`NOPASSWD`) sudo access** for the executing user.
+
+This design choice reflects the controlled experimental environment used in the evaluation
+and is intended to eliminate interactive privilege prompts during runtime control.
+
 ## 1) Install Kubernetes packages (kubelet/kubeadm/kubectl) from pkgs.k8s.io
 ```bash
 export KUBERNETES_VERSION=v1.30
