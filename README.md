@@ -1,4 +1,4 @@
-# EVMMv2
+# EVMMv2: Elastic Vertical Memory Management v2
 
 EVMMv2 is a vertical memory management framework for Kubernetes that dynamically adjusts container memory resources without requiring container restarts. 
 It is designed to improve memory utilization efficiency and reduce OOM events in oversubscribed cluster environments.
