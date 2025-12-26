@@ -3,18 +3,23 @@
 This document describes the minimum system setup that we used to run EVMMv2.
 The setup targets Kubernetes + CRI-O on Debian/Ubuntu-based systems.
 
-> Tested versions:
-> - Kubernetes: v1.27.x ~ v1.30.x
-> - CRI-O: v1.30.x
->
-> Note: This explanation is based primarily on v1.30.
+Verification  versions:
+ - Ubuntu 20.04
+ - Kubernetes: v1.30.x
+ - CRI-O: v1.30.x
+ - Buildah : 1.33.x
+ - CRIU: 4.1.1
+ Note: This guide primarily targets Kubernetes v1.30.x. Other versions (e.g., v1.27.x) may require additional adjustments.
+ Note: Be mindful of the CRIU version, as an outdated version may cause CRIU failure.
+Note: EVMMv2 uses Buildah internally to construct checkpoint-based container images.
 
-## 0) Prerequisites
 
-- Debian/Ubuntu-based Linux
-- `curl`, `gpg`, `apt-transport-https`, `jq`
-- Root or sudo privileges
+## Prerequisites
+- Ubuntu 20.04 or later
 - cgroup v2 enabled
+- Passwordless (`NOPASSWD`) sudo access
+- Standard GNU/Linux userland tools (curl, gpg, jq)
+- buildah, criu
 
   ## Privilege Assumptions
 
@@ -27,8 +32,18 @@ For experimental simplicity and deterministic behavior, the implementation
 This design choice reflects the controlled experimental environment used in the evaluation
 and is intended to eliminate interactive privilege prompts during runtime control.
 
-## 1) Install Kubernetes packages (kubelet/kubeadm/kubectl) from pkgs.k8s.io
+## 0) Install Required Packages
 ```bash
+sudo apt update -y
+sudo apt upgrade -y
+sudo apt install curl gpg jq nano criu buildah -y
+```
+
+## 1) Get Kubernetes packages (kubelet/kubeadm/kubectl)
+
+```bash
+sudo swapoff -a # Required by Kubernetes default configuration
+
 export KUBERNETES_VERSION=v1.30
 
 sudo mkdir -p /etc/apt/keyrings
@@ -40,7 +55,8 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
   | sudo tee /etc/apt/sources.list.d/kubernetes.list
 ```
 
-2) Install CRI-O from pkgs.k8s.io
+2) Get CRI-O package
+
 ```bash
 export CRIO_VERSION=v1.30
 
@@ -51,14 +67,16 @@ echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.i
   | sudo tee /etc/apt/sources.list.d/cri-o.list
 ```
 
-3) Install packages and start CRI-O
+3) Install packages and start CRI-O serivce
+   
 ```bash
 sudo apt-get update
 sudo apt-get install -y cri-o kubelet kubeadm kubectl
 sudo systemctl enable --now crio.service
 ```
 
-4) Kernel modules and sysctl required by Kubernetes networking
+4) Kubernetes network setting
+
 ```bash
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
@@ -80,8 +98,10 @@ sudo sysctl --system
 5) CRIU / Checkpoint configuration (CRI-O + runc)
 EVMMv2 uses checkpoint/restore functionality. On some environments, crun may fail to locate CRIU libraries
 (e.g., failed: could not load libcriu.so.2). In that case, switching the default runtime to runc is required.
+Additionally, EVMMv2 may need to disable signature_validation to ensure that recovery from the generated checkpoint container image is possible.
+drop_infra_ctr=false is required to restore containers as pods. Otherwise, CreateContainerError may occur.
 
-Configure CRI-O:
+5.1. Configure CRI-O:
 
 Edit: /etc/crio/crio.conf.d/10-crio.conf
 
@@ -94,43 +114,17 @@ default_runtime = "runc"
 drop_infra_ctr = false
 ```
 
-Install CRIU and restart CRI-O:
+5.2. Restart CRI-O:
 
 ```bash
-sudo apt-get install -y criu
 sudo systemctl daemon-reload
 sudo systemctl restart crio
 ```
-Note: drop_infra_ctr=false is required to restore containers as pods. Otherwise, CreateContainerError may occur.
 
-6) Bootstrap Kubernetes with kubeadm (feature gates)
-Create kubeadm-config.yaml:
-
-```yaml
-apiVersion: kubelet.config.k8s.io/v1beta1
-kind: KubeletConfiguration
-failSwapOn: false
-featureGates:
-  InPlacePodVerticalScaling: true
----
-apiVersion: kubeadm.k8s.io/v1beta3
-kind: ClusterConfiguration
-kubernetesVersion: v1.30.14
-apiServer:
-  extraArgs:
-    feature-gates: "InPlacePodVerticalScaling=true"
-controllerManager:
-  extraArgs:
-    feature-gates: "InPlacePodVerticalScaling=true"
-scheduler:
-  extraArgs:
-    feature-gates: "InPlacePodVerticalScaling=true"
-```
-
-Initialize:
+5.3. Initialize:
 
 ```bash
-sudo kubeadm init --config=kubeadm-config.yaml --upload-certs | tee kubeadm-init.out
+sudo kubeadm init  --upload-certs | tee kubeadm-init.out
 ```
 
 Set kubeconfig:
@@ -149,14 +143,31 @@ kubectl apply -f calico.yaml
 8) Kubelet auth change for checkpoint API testing
 Edit: /var/lib/kubelet/config.yaml (on each node) and restart kubelet.
 
+```
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  anonymous:
+    enabled: true
+  webhook:
+    cacheTTL: 0s
+    enabled: false
+  x509:
+    clientCAFile: /etc/kubernetes/pki/ca.crt
+authorization:
+  mode: AlwaysAllow
+```
+
 ```bash
 sudo systemctl restart kubelet
 ```
-Smoke test:
+
+## Checkpoint and Image Creation Verification Test:
+
 ```bash
 curl -sk https://127.0.0.1:10250/pods
 ```
 Example pod:
+
 ```
 kubectl create -f - <<EOF
 apiVersion: v1
@@ -168,4 +179,41 @@ spec:
   - name: nginx
     image: docker.io/nginx:latest
 EOF
+```
+
+```bash
+curl -sk -X POST "https://localhost:10250/checkpoint/default/nginx/nginx"
+```
+
+You can verify whether the checkpoint was created successfully via the following path.
+```bash
+sudo ls -l /var/lib/kubelet/checkpoints
+```
+
+You must enter the path of the checkpoint found in `sudo ls -l /var/lib/kubelet/checkpoints` into Buildah.
+```bash
+newcontainer=$(sudo buildah from scratch)
+sudo buildah add $newcontainer /var/lib/kubelet/checkpoints/checkpoint-nginx_default-nginx-2026-00-00T00:00:00+00:00.tar /
+sudo buildah config --annotation=io.kubernetes.cri-o.annotations.checkpoint.name=nginx $newcontainer
+sudo buildah commit $newcontainer checkpoint-image:latest
+sudo buildah rm $newcontainer
+```
+
+Restore the container using the checkpoint image you created. Since you created the image locally, you must specify the name of the node.
+```bash
+kubectl create -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restore-nginx
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: localhost/checkpoint-image:latest
+    imagePullPolicy: Never # If not set to # never, a connection refused error occurs (unable to retrieve internal images).
+  nodeName: your-nodename
+EOF
+
 ```
