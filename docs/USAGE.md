@@ -28,7 +28,9 @@ In addition to the node name, several experimental parameters (e.g., thresholds 
 
 EVMMv2 interacts directly with the CRI-API through the CRI-O Unix domain socket
 (`/var/run/crio/crio.sock`).  
+
 In the tested environment, the socket permission may be reset during runtime (e.g., due to CRI-O or systemd behavior), which prevents EVMMv2 from accessing container runtime information.
+
 To ensure continuous monitoring and control, the socket permission must be kept writable by the EVMMv2 process. The following command was used in the experimental setup to maintain the required permissions:
 
 ```bash
