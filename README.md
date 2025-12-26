@@ -36,7 +36,7 @@ The implementation has been evaluated under the following environment:
   [`docs/SETUP.md`](docs/SETUP.md).
 
 - **Usage**  
-  An overview of how EVMMv2 operates and how it is used in experiments is described in  
+  An overview of how to use EVMMv2 in 
   [`docs/USAGE.md`](docs/USAGE.md).
 
 ---
