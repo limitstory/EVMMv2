@@ -139,6 +139,8 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 curl -LO https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifests/calico.yaml
 kubectl apply -f calico.yaml
 ```
+Note: The Calico manifest shown below is verified to work with Kubernetes v1.30.x in our environment.
+Depending on the target environment, users may need to select an appropriate Calico version.
 
 8) Kubelet auth change for checkpoint API testing
 Edit: /var/lib/kubelet/config.yaml (on each node) and restart kubelet.
@@ -161,7 +163,7 @@ authorization:
 sudo systemctl restart kubelet
 ```
 
-## Checkpoint and Image Creation Verification Test:
+## Checkpoint and Image Creation Verification Test (optional):
 
 ```bash
 curl -sk https://127.0.0.1:10250/pods
@@ -198,6 +200,8 @@ sudo buildah config --annotation=io.kubernetes.cri-o.annotations.checkpoint.name
 sudo buildah commit $newcontainer checkpoint-image:latest
 sudo buildah rm $newcontainer
 ```
+Note: The checkpoint tar filename varies depending on the pod name and creation time.
+Replace the example filename below with the actual file name listed in `/var/lib/kubelet/checkpoints`.
 
 Restore the container using the checkpoint image you created. Since you created the image locally, you must specify the name of the node.
 ```bash
