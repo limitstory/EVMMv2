@@ -10,7 +10,7 @@ Verification  versions:
  - Buildah : 1.33.x
  - CRIU: 4.1.1
    
-Notes
+Notes:
 - This guide primarily targets Kubernetes v1.30.x. Other versions (e.g., v1.27.x) may require additional adjustments.
 - Ensure that a recent CRIU version is used, as outdated versions may cause checkpoint/restore failures.
 - EVMMv2 uses Buildah internally to construct checkpoint-based container images.
@@ -145,6 +145,7 @@ curl -LO https://raw.githubusercontent.com/projectcalico/calico/v3.25.1/manifest
 kubectl apply -f calico.yaml
 ```
 Note: 
+
 The Calico manifest above is verified to work with Kubernetes v1.30.x in our environment.
 Depending on the target environment, users may need to select an appropriate Calico version.
 
@@ -210,6 +211,7 @@ sudo buildah commit $newcontainer checkpoint-image:latest
 sudo buildah rm $newcontainer
 ```
 Note: 
+
 The checkpoint tar filename varies depending on the pod name and creation time.
 Replace the example filename with the actual file listed in `/var/lib/kubelet/checkpoints`.
 
