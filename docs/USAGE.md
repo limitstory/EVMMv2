@@ -1,7 +1,26 @@
 # EVMMv2 Usage
 
 This document describes how to execute EVMMv2 after completing the system setup.
-EVMMv2 is provided as a reference implementation and is executed directly from source.
+EVMMv2 is provided as a research prototype and is executed directly from source.
+
+---
+
+## Pre-run Configuration
+
+Before running EVMMv2, the target node name must be specified in the source code.
+
+EVMMv2 operates on a node-level basis and directly interacts with the container
+runtime through the CRI-API. For this reason, the name of the node on which
+EVMMv2 is executed must be explicitly provided.
+
+Edit the following file and set the node name accordingly:
+
+```go
+// global/global_variable.go
+const NODENAME string = "your-nodename"
+```
+
+In addition to the node name, several experimental parameters (e.g., thresholds and control intervals) can also be adjusted in this file.
 
 ---
 
@@ -9,13 +28,8 @@ EVMMv2 is provided as a reference implementation and is executed directly from s
 
 EVMMv2 interacts directly with the CRI-API through the CRI-O Unix domain socket
 (`/var/run/crio/crio.sock`).  
-In the tested environment, the socket permission may be reset during runtime
-(e.g., due to CRI-O or systemd behavior), which prevents EVMMv2 from accessing
-container runtime information.
-
-To ensure continuous monitoring and control, the socket permission must be
-kept writable by the EVMMv2 process. The following command was used in the
-experimental setup to maintain the required permissions:
+In the tested environment, the socket permission may be reset during runtime (e.g., due to CRI-O or systemd behavior), which prevents EVMMv2 from accessing container runtime information.
+To ensure continuous monitoring and control, the socket permission must be kept writable by the EVMMv2 process. The following command was used in the experimental setup to maintain the required permissions:
 
 ```bash
 while true; do
