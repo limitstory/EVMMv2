@@ -29,6 +29,18 @@ The implementation has been evaluated under the following environment:
 
 ---
 
+## Documentation
+
+- **System Setup**  
+  Detailed instructions for preparing the experimental environment are provided in  
+  [`docs/SETUP.md`](docs/SETUP.md).
+
+- **Usage**  
+  An overview of how EVMMv2 operates and how it is used in experiments is described in  
+  [`docs/USAGE.md`](docs/USAGE.md).
+
+---
+
 ## Patent Notice
 
 The underlying techniques of EVMMv2 are subject to a **pending patent application**. 
