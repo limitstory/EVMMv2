@@ -1,7 +1,7 @@
 package modules
 
 const ENDPOINT string = "unix:///var/run/crio/crio.sock"
-const NODENAME string = "limitstory-virtualbox"
+const NODENAME string = "your-nodename"
 
 const IS_STATEFUL bool = true
 
