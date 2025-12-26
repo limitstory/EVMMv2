@@ -21,7 +21,7 @@ Note: EVMMv2 uses Buildah internally to construct checkpoint-based container ima
 - Standard GNU/Linux userland tools (curl, gpg, jq)
 - buildah, criu
 
-  ## Privilege Assumptions
+## Privilege Assumptions
 
 EVMMv2 performs runtime control operations that require elevated privileges
 (e.g., interactions with CRI-O, kubelet, and checkpoint/restore mechanisms).
@@ -55,7 +55,7 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
   | sudo tee /etc/apt/sources.list.d/kubernetes.list
 ```
 
-2) Get CRI-O package
+## 2) Get CRI-O package
 
 ```bash
 export CRIO_VERSION=v1.30
@@ -67,7 +67,7 @@ echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.i
   | sudo tee /etc/apt/sources.list.d/cri-o.list
 ```
 
-3) Install packages and start CRI-O serivce
+## 3) Install packages and start CRI-O serivce
    
 ```bash
 sudo apt-get update
@@ -75,7 +75,7 @@ sudo apt-get install -y cri-o kubelet kubeadm kubectl
 sudo systemctl enable --now crio.service
 ```
 
-4) Kubernetes network setting
+## 4) Kubernetes network setting
 
 ```bash
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
@@ -95,13 +95,13 @@ EOF
 sudo sysctl --system
 ```
 
-5) CRIU / Checkpoint configuration (CRI-O + runc)
+## 5) CRIU / Checkpoint configuration (CRI-O + runc)
 EVMMv2 uses checkpoint/restore functionality. On some environments, crun may fail to locate CRIU libraries
 (e.g., failed: could not load libcriu.so.2). In that case, switching the default runtime to runc is required.
 Additionally, EVMMv2 may need to disable signature_validation to ensure that recovery from the generated checkpoint container image is possible.
 drop_infra_ctr=false is required to restore containers as pods. Otherwise, CreateContainerError may occur.
 
-5.1. Configure CRI-O:
+### 5.1. Configure CRI-O:
 
 Edit: /etc/crio/crio.conf.d/10-crio.conf
 
@@ -114,14 +114,14 @@ default_runtime = "runc"
 drop_infra_ctr = false
 ```
 
-5.2. Restart CRI-O:
+### 5.2. Restart CRI-O:
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl restart crio
 ```
 
-5.3. Initialize:
+### 5.3. Initialize:
 
 ```bash
 sudo kubeadm init  --upload-certs | tee kubeadm-init.out
