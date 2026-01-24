@@ -4,7 +4,7 @@ EVMMv2 is a vertical memory management framework for Kubernetes that dynamically
 It is designed to improve memory utilization efficiency and reduce OOM events in oversubscribed cluster environments.
 
 This repository provides a reference implementation of EVMMv2 corresponding to the following research paper:
-**Taeshin Kang , Minwoo Kang , Heonchang Yu , Vertical Auto-scaling Mechanism for Elastic Memory Management of Containerized Applications in Kubernetes, Future Generation Computer Systems (2026), doi: https://doi.org/10.1016/j.future.2026.108407**
+Taeshin Kang , Minwoo Kang , Heonchang Yu , Vertical Auto-scaling Mechanism for Elastic Memory Management of Containerized Applications in Kubernetes, Future Generation Computer Systems (2026), doi: https://doi.org/10.1016/j.future.2026.108407
 
 ---
 
